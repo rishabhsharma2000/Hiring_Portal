@@ -1,18 +1,27 @@
+# Stage 1: Build the application
 FROM maven:3.8.1-openjdk-11 AS builder
 
 WORKDIR /app
-
+  
+  # Copy the Maven configuration and dependencies
 COPY pom.xml .
 RUN mvn dependency:go-offline -B
+  
+  # Copy the source code and build the application
 COPY src ./src
-RUN mvn package
-
+RUN mvn package -DskipTests
+  
+  # Stage 2: Create the runtime image
 FROM openjdk:11-jre-slim
-
-COPY --from=builder /app/target/app.jar ./app.jar
-
+  
+  # Copy the packaged JAR file from the builder stage
+COPY --from=builder /app/target/*.jar app.jar
+  
+  # Set the port the app runs on
 ENV APP_PORT=8000
-
+  
+  # Expose the application port
 EXPOSE $APP_PORT
-
+  
+  # Command to run the application
 CMD ["java", "-jar", "app.jar"]
