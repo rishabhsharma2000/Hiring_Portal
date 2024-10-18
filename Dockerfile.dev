@@ -1,0 +1,30 @@
+# Use a base image with Maven and Java
+FROM maven:3.8.1-openjdk-11 AS builder
+
+# Set the working directory in the container
+WORKDIR /app
+
+# Copy the Maven project file (pom.xml)
+COPY pom.xml .
+
+# Download project dependencies (if they've changed)
+RUN mvn dependency:go-offline -B
+
+# Copy the rest of the application source code
+COPY src ./src
+
+# Build the JAR file
+RUN mvn package
+
+# Use a minimal JRE base image for the final image
+FROM openjdk:11-jre-slim
+
+# Copy the JAR file from the builder stage
+COPY --from=builder /app/target/hiring-portal-0.0.1-SNAPSHOT.jar ./hiring-portal-0.0.1-SNAPSHOT.jar
+
+# Expose port 8000 to allow external connections
+EXPOSE 8000
+
+# Define the command to run your Java application
+CMD ["java", "-jar", "hiring-portal-0.0.1-SNAPSHOT.jar"]
+
